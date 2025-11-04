@@ -1,0 +1,43 @@
+<edges>
+    <!-- Upper -->
+    <edge id="nw_ne" from="nw" to="ne" numLanes="2" speed="13.9"/>
+    <edge id="ne_nw" from="ne" to="nw" numLanes="2" speed="13.9"/>
+
+    <!-- Bottom -->
+    <edge id="sw_se" from="sw" to="se" numLanes="2" speed="13.9"/>
+    <edge id="se_sw" from="se" to="sw" numLanes="2" speed="13.9"/>
+
+    <!-- Left -->
+    <edge id="nw_sw" from="nw" to="sw" numLanes="2" speed="13.9"/>
+    <edge id="sw_nw" from="sw" to="nw" numLanes="2" speed="13.9"/>
+
+    <!-- Right -->
+    <edge id="ne_se" from="ne" to="se" numLanes="2" speed="13.9"/>
+    <edge id="se_ne" from="se" to="ne" numLanes="2" speed="13.9"/>
+
+    <!-- NW-outer-Connections -->
+    <edge id="north_in_nw" from="north_in_w" to="nw" numLanes="2" speed="13.9"/>
+    <edge id="north_out_nw" from="nw" to="north_in_w" numLanes="2" speed="13.9"/>
+    <edge id="west_in_nw" from="west_in_n" to="nw" numLanes="2" speed="13.9"/>
+    <edge id="west_out_nw" from="nw" to="west_in_n" numLanes="2" speed="13.9"/>
+
+    <!-- NE-outer-Connections -->
+    <edge id="north_in_ne" from="north_in_e" to="ne" numLanes="2" speed="13.9"/>
+    <edge id="north_out_ne" from="ne" to="north_in_e" numLanes="2" speed="13.9"/>
+    <edge id="est_in_ne" from="east_out_n" to="ne" numLanes="2" speed="13.9"/>
+    <edge id="est_out_ne" from="ne" to="east_out_n" numLanes="2" speed="13.9"/>
+
+    <!-- SW-outer-Connections -->
+    <edge id="south_out_sw" from="sw" to="south_out_w" numLanes="2" speed="13.9"/>
+    <edge id="south_in_sw" from="south_out_w" to="sw" numLanes="2" speed="13.9"/>
+    <edge id="west_in_sw" from="west_in_s" to="sw" numLanes="2" speed="13.9"/>
+    <edge id="west_out_sw" from="sw" to="west_in_s" numLanes="2" speed="13.9"/>
+
+
+    <!-- SE-outer-Connections -->
+    <edge id="east_out_se" from="se" to="east_out_s" numLanes="2" speed="13.9"/>
+    <edge id="east_in_se" from="east_out_s" to="se" numLanes="2" speed="13.9"/>
+    <edge id="south_out_se" from="se" to="south_out_e" numLanes="2" speed="13.9"/>
+    <edge id="south_in_se" from="south_out_e" to="se" numLanes="2" speed="13.9"/>
+
+</edges>

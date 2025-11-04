@@ -1,0 +1,20 @@
+<routes>
+    <vType id="car" accel="1" decel="4.5" sigma="0.5" length="5" minGap="2.5" maxSpeed="13.9"/>
+
+    <!-- 主要路线：外部进 → 内部网格 → 外部出 -->
+    <!-- <route id="r1" edges="north_in_w_nw nw_sw sw_se se_ne ne_south_out_e"/>
+    <route id="r2" edges="west_in_n_nw nw_ne ne_se se_sw sw_nw nw_east_out_n"/>
+    <route id="r3" edges="north_in_e_ne ne_se se_sw sw_nw nw_south_out_w"/>
+    <route id="r4" edges="west_in_s_sw sw_se se_ne ne_nw nw_east_out_n"/> -->
+
+    <route id="r1" edges=" nw_sw sw_se se_ne "/>
+    <route id="r2" edges=" nw_ne ne_se se_sw sw_nw "/>
+    <route id="r3" edges=" ne_se se_sw sw_nw "/>
+    <route id="r4" edges=" sw_se se_ne ne_nw "/>
+
+    <!-- 定义流量 -->
+    <flow id="f1" type="car" route="r1" begin="0" end="2000" vehsPerHour="600"/>
+    <flow id="f2" type="car" route="r2" begin="0" end="2000" vehsPerHour="600"/>
+    <flow id="f3" type="car" route="r3" begin="0" end="2000" vehsPerHour="600"/>
+    <flow id="f4" type="car" route="r4" begin="0" end="2000" vehsPerHour="600"/>
+</routes>

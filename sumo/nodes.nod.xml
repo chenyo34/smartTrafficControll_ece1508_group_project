@@ -1,0 +1,18 @@
+<nodes>
+    <!-- 四个十字路口 -->
+    <node id="nw" x="0" y="200" type="traffic_light"/>
+    <node id="ne" x="200" y="200" type="traffic_light"/>
+    <node id="sw" x="0" y="0" type="traffic_light"/>
+    <node id="se" x="200" y="0" type="traffic_light"/>
+
+    <!-- 外部入口出口节点 -->
+    <node id="north_in_w" x="0" y="300" type="priority"/>
+    <node id="north_in_e" x="200" y="300" type="priority"/>
+    <node id="south_out_w" x="0" y="-100" type="priority"/>
+    <node id="south_out_e" x="200" y="-100" type="priority"/>
+
+    <node id="west_in_n" x="-100" y="200" type="priority"/>
+    <node id="west_in_s" x="-100" y="0" type="priority"/>
+    <node id="east_out_n" x="300" y="200" type="priority"/>
+    <node id="east_out_s" x="300" y="0" type="priority"/>
+</nodes>
