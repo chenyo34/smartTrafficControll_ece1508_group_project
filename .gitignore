@@ -1,2 +1,3 @@
 # Ignoring everything in the folder
 outputs/*
+__pycache__/*
