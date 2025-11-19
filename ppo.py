@@ -5,25 +5,23 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.distributions import Categorical
+from single_intersection import TrafficEnv
 
-from single_intersection import TrafficEnv  # 你的环境文件
 
+# GAMMA = 0.99
+# GAE_LAMBDA = 0.95
+# CLIP_EPS = 0.2
+# LR = 3e-4
+# ENT_COEF = 0.01
+# VF_COEF = 0.5
+# MAX_GRAD_NORM = 0.5
 
-GAMMA = 0.99
-GAE_LAMBDA = 0.95
-CLIP_EPS = 0.2
-LR = 3e-4
-ENT_COEF = 0.01
-VF_COEF = 0.5
-MAX_GRAD_NORM = 0.5
+# N_STEPS = 2048        # 每次采样的总步数
+# N_EPOCHS = 10         # 每批样本上更新多少个 epoch
+# MINI_BATCH_SIZE = 256 # 从 N_STEPS 里分成小批次
+# TOTAL_TIMESTEPS = 200_000  # 总训练步数（可改）
 
-N_STEPS = 2048        # 每次采样的总步数
-N_EPOCHS = 10         # 每批样本上更新多少个 epoch
-MINI_BATCH_SIZE = 256 # 从 N_STEPS 里分成小批次
-TOTAL_TIMESTEPS = 200_000  # 总训练步数（可改）
-
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+# DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class ActorCritic(nn.Module):
@@ -60,7 +58,7 @@ class ActorCritic(nn.Module):
           log_prob: float
           value: float
         """
-        obs_t = torch.tensor(obs, dtype=torch.float32, device=DEVICE).unsqueeze(0)
+        obs_t = torch.tensor(obs, dtype=torch.float32, device=None).unsqueeze(0)
         with torch.no_grad():
             logits, value = self.forward(obs_t)
             dist = Categorical(logits=logits)
@@ -91,7 +89,7 @@ class ActorCritic(nn.Module):
 
 
 
-def compute_gae(rewards, values, dones, next_value, gamma=GAMMA, lam=GAE_LAMBDA):
+def compute_gae(rewards, values, dones, next_value, gamma, lam):
     """
     rewards: [T]
     values:  [T]
@@ -184,8 +182,11 @@ def train_ppo(
     N_STEPS = 2048, 
     N_EPOCHS = 10,        
     MINI_BATCH_SIZE = 256, 
-    TOTAL_TIMESTEPS = 200_000  
+    TOTAL_TIMESTEPS = 200_000,
+    DEVICE=None
 ):
+    
+
     if env is None:
         raise ValueError("Please provide a valid environment instance.")
     
@@ -219,7 +220,8 @@ def train_ppo(
 
         # 2) 计算 GAE & returns
         advantages, returns = compute_gae(
-            rewards_arr, values_arr, dones_arr, next_value,
+            rewards_arr, values_arr, 
+            dones_arr, next_value,
             gamma=GAMMA, lam=GAE_LAMBDA
         )
 

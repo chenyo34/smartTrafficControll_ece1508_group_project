@@ -15,6 +15,7 @@ class TrafficEnv(gym.Env):
     metadata = {"render_modes": ["human"]}
 
     def __init__(self, sumo_cmd, tls_id, gui=False,
+                 max_steps=3600,
                  c1=1.0,
                  c2=0.3, 
                  c3=0.15,
@@ -26,6 +27,8 @@ class TrafficEnv(gym.Env):
         self.sumo_cmd = cmd_prefix +  sumo_cmd
         self.ts_id = tls_id
 
+        self.steps = 0
+        self.max_steps = max_steps
         self.c1 = c1
         self.c2 = c2
         self.c3 = c3
@@ -80,6 +83,7 @@ class TrafficEnv(gym.Env):
     def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
 
+        self.steps = 0
         traci.close(False)
         self._start_sumo()
         self._identify_lanes()
@@ -95,6 +99,8 @@ class TrafficEnv(gym.Env):
     # Step
     # ---------------------------------------------------------
     def step(self, action):
+
+        self.steps += 1
         # Apply traffic light phase
         self.sumo.trafficlight.setPhase(self.ts_id, int(action))
 
@@ -117,7 +123,7 @@ class TrafficEnv(gym.Env):
         else: 
             done = False
             
-        truncated = False
+        truncated = self.steps >= self.max_steps if hasattr(self, 'max_steps') else False 
         info = {}
 
         return obs, reward, done, truncated, info
