@@ -146,8 +146,10 @@ def collect_rollout(env, model, n_steps):
 
         obs = next_obs
 
-        if done or truncated:
+        if done or truncated :
             obs, info = env.reset()
+        
+        
 
     # rollout 结束后，用最后一个状态估计 V(s_T)
     obs_t = torch.tensor(obs, dtype=torch.float32, device=DEVICE).unsqueeze(0)
@@ -170,25 +172,29 @@ def collect_rollout(env, model, n_steps):
 
 
 
-def train_ppo():
-    # === 创建 SUMO 环境 ===
-    sumo_cmd = [
-        "-n", "single-intersection.net.xml",
-        "-r", "single-intersection-vertical.rou.xml",
-        "--step-length", "1.0",
-    ]
-    TLS_ID = "t"
-
-    # 训练时建议关掉 GUI 加速
-    env = TrafficEnv(sumo_cmd=sumo_cmd, tls_id=TLS_ID, gui=False)
-
+def train_ppo(
+    env=None,
+    GAMMA = 0.99,
+    GAE_LAMBDA = 0.95,
+    CLIP_EPS = 0.2,
+    LR = 3e-4,
+    ENT_COEF = 0.01,
+    VF_COEF = 0.5,
+    MAX_GRAD_NORM = 0.5,
+    N_STEPS = 2048, 
+    N_EPOCHS = 10,        
+    MINI_BATCH_SIZE = 256, 
+    TOTAL_TIMESTEPS = 200_000  
+):
+    if env is None:
+        raise ValueError("Please provide a valid environment instance.")
+    
     obs_dim = env.observation_space.shape[0]
     act_dim = env.action_space.n
 
     print("Observation dim:", obs_dim)
     print("Action dim:", act_dim)
 
-    # === 创建 PPO 网络与优化器 ===
     model = ActorCritic(obs_dim, act_dim).to(DEVICE)
     optimizer = optim.Adam(model.parameters(), lr=LR)
 
@@ -203,7 +209,7 @@ def train_ppo():
         batch = collect_rollout(env, model, N_STEPS)
         global_step += N_STEPS
 
-        obs_arr = batch["obs"]
+        obs_arr = batch["obs"] 
         actions_arr = batch["actions"]
         old_logprobs_arr = batch["logprobs"]
         rewards_arr = batch["rewards"]
@@ -266,6 +272,8 @@ def train_ppo():
                 loss.backward()
                 nn.utils.clip_grad_norm_(model.parameters(), MAX_GRAD_NORM)
                 optimizer.step()
+
+
 
         # 4) 打印训练信息（粗略统计一下最近一批的平均奖励）
         batch_mean_return = rewards_arr.mean() * N_STEPS  # 很粗略，仅为参考
