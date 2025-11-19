@@ -110,6 +110,12 @@ class TrafficEnv(gym.Env):
         # Reward
         reward = self._compute_reward(action)
 
+        # Evaluation Metrics
+        avg_speed=self._computer_avg_speed()
+        throughput=self._compute_throughput()
+        waiting_time=self._compute_waiting_time()
+
+
         # Update history
         self.prev_phase = action
         self.prev_passed = len(self.sumo.simulation.getArrivedIDList())
@@ -203,6 +209,30 @@ class TrafficEnv(gym.Env):
         reduction = self.prev_queue - Q_t
         self.prev_queue = Q_t
         return reduction
+    
+    def _computer_avg_speed(self):
+        vehs_speeds=[]
+        for lane in self.in_lanes:
+            vehs = self.sumo.lane.getLastStepVehicleIDs(lane)
+            for v in vehs:
+                v_speed=self.sumo.vehicle.getSpeed(v)
+                vehs_speeds.append(v_speed)
+        if len(vehs_speeds) == 0:
+            return 0.0
+        return np.mean(vehs_speeds)
+    
+    def _compute_avg_waiting_time(self):
+        wts=[]
+        
+        for lane in self.in_lanes:
+            vehs = self.sumo.lane.getLastStepVehicleIDs(lane)
+            for v in vehs:
+                wt = self.sumo.vehicle.getWaitingTime(v)  # 或 getAccumulatedWaitingTime(v)
+                wts.append(wt)
+        if len(wts)==0:
+            return 0.0
+        return np.mean(wts)
+
     # ---------------------------------------------------------
     # Close
     # ---------------------------------------------------------

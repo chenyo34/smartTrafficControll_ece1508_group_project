@@ -112,12 +112,16 @@ def collect_rollout(env, model, n_steps):
     dones = []
     values = []
 
+    avg_speeds=[]
+    throughputs=[]
+    waiting_times=[]
+
     obs, info = env.reset()
 
     for step in range(n_steps):
         action, log_prob, value = model.act(obs)
 
-        next_obs, reward, done, truncated, info = env.step(action)
+        next_obs, reward, done, truncated, info, avg_speed, throughput, waiting_time = env.step(action)
         # 这个 env 的 done 一直是 False，目前可以忽略 truncated，按持续任务处理
 
         obs_list.append(obs)
@@ -126,6 +130,10 @@ def collect_rollout(env, model, n_steps):
         rewards.append(reward)
         dones.append(float(done or truncated))
         values.append(value)
+
+        avg_speeds.append(avg_speed)
+        throughputs.append(throughput)
+        waiting_times.append(waiting_time)
 
         obs = next_obs
 
@@ -149,6 +157,9 @@ def collect_rollout(env, model, n_steps):
         "values": np.array(values, dtype=np.float32),
         "next_obs": obs,
         "next_value": next_value,
+        "average speeds": np.array(avg_speeds, dtype=np.float32),
+        "throughputs": np.array(throughputs, dtype=np.float32),
+        "waiting_time": np.array(waiting_times, dtype=np.float32)
     }
 
     return batch
