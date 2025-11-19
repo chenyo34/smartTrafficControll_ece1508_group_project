@@ -8,21 +8,6 @@ from torch.distributions import Categorical
 from single_intersection import TrafficEnv
 
 
-# GAMMA = 0.99
-# GAE_LAMBDA = 0.95
-# CLIP_EPS = 0.2
-# LR = 3e-4
-# ENT_COEF = 0.01
-# VF_COEF = 0.5
-# MAX_GRAD_NORM = 0.5
-
-# N_STEPS = 2048        # 每次采样的总步数
-# N_EPOCHS = 10         # 每批样本上更新多少个 epoch
-# MINI_BATCH_SIZE = 256 # 从 N_STEPS 里分成小批次
-# TOTAL_TIMESTEPS = 200_000  # 总训练步数（可改）
-
-# DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 
 class ActorCritic(nn.Module):
     def __init__(self, obs_dim, act_dim):
@@ -58,7 +43,7 @@ class ActorCritic(nn.Module):
           log_prob: float
           value: float
         """
-        obs_t = torch.tensor(obs, dtype=torch.float32, device=None).unsqueeze(0)
+        obs_t = torch.tensor(obs, dtype=torch.float32).unsqueeze(0)
         with torch.no_grad():
             logits, value = self.forward(obs_t)
             dist = Categorical(logits=logits)
@@ -150,7 +135,7 @@ def collect_rollout(env, model, n_steps):
         
 
     # rollout 结束后，用最后一个状态估计 V(s_T)
-    obs_t = torch.tensor(obs, dtype=torch.float32, device=DEVICE).unsqueeze(0)
+    obs_t = torch.tensor(obs, dtype=torch.float32).unsqueeze(0)
     with torch.no_grad():
         _, next_value_t = model.forward(obs_t)
     next_value = next_value_t.cpu().item()
