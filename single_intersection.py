@@ -111,7 +111,12 @@ class TrafficEnv(gym.Env):
         # Observation
         obs = self._get_observation()
 
-        done = False
+        # Check collision
+        if self.sumo.simulation.getCollidingVehiclesNumber() > 0:
+            done = True
+        else: 
+            done = False
+            
         truncated = False
         info = {}
 
