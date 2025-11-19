@@ -18,6 +18,9 @@ TLS_ID = "t"
 env = TrafficEnv(sumo_cmd=sumo_cmd, tls_id=TLS_ID, gui=True)
 
 print("env.action_space:", env.action_space)
+# Print out all possible actions (phases)
+for action in range(env.action_space.n):
+    print(f"  Action {action}: Phase {action}")
 print("env.observation_space:", env.observation_space)
 # Reset
 obs, info = env.reset()
