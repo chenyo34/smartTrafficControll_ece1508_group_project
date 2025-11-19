@@ -15,18 +15,22 @@ class TrafficEnv(gym.Env):
     metadata = {"render_modes": ["human"]}
 
     def __init__(self, sumo_cmd, tls_id, gui=False,
-                 alpha=1.0,
-                 beta=0.5, 
-                 gamma=1.0):
+                 c1=1.0,
+                 c2=0.3, 
+                 c3=0.15,
+                 c4=0.05,
+                 c5=0.005):
         super().__init__()
 
         cmd_prefix = ["sumo-gui", "--start"] if gui else ["sumo"]
         self.sumo_cmd = cmd_prefix +  sumo_cmd
         self.ts_id = tls_id
 
-        self.alpha = alpha
-        self.beta = beta
-        self.gamma = gamma
+        self.c1 = c1
+        self.c2 = c2
+        self.c3 = c3
+        self.c4 = c4
+        self.c5 = c5
 
         self._start_sumo()
         self._identify_lanes()
@@ -43,6 +47,7 @@ class TrafficEnv(gym.Env):
 
         self.prev_phase = self.sumo.trafficlight.getPhase(self.ts_id)
         self.prev_passed = len(self.sumo.simulation.getArrivedIDList())
+        self.prev_queue = 0
 
 
     # ---------------------------------------------------------
@@ -129,28 +134,64 @@ class TrafficEnv(gym.Env):
     # Reward function
     # ---------------------------------------------------------
     def _compute_reward(self, action):
+        queue_reduction = self._compute_queue_reduction()
+        queue_abs = self._compute_queue_length()
+        pressure = self._compute_pressure()
+        switch_penalty = self._compute_switch_penalty(action)
+        throughput = self._compute_throughput()
         return (
-            - self.alpha * self._compute_pressure()
-            - self.beta * self._compute_switch_penalty(action)
-            + self.gamma * self._compute_throughput()
+            self.c1 * queue_reduction
+            - self.c2 * queue_abs
+            - self.c3 * pressure
+            - self.c4 * switch_penalty
+            + self.c5 * throughput
         )
 
 
-    def _compute_pressure(self):
-        incoming = sum(self.sumo.lane.getLastStepVehicleNumber(l) for l in self.in_lanes)
-        outgoing = sum(self.sumo.lane.getLastStepVehicleNumber(l) for l in self.out_lanes)
-        return incoming - outgoing
+    # def _compute_pressure(self):
+    #     incoming = sum(self.sumo.lane.getLastStepVehicleNumber(l) for l in self.in_lanes)
+    #     outgoing = sum(self.sumo.lane.getLastStepVehicleNumber(l) for l in self.out_lanes)
+    #     return incoming - outgoing
 
+    def _compute_pressure(self):
+        """
+        Computes traffic pressure exactly following:
+        P_i = sum_{m in movements(i)} (x_in(m) - x_out(m))
+        where each movement m is (incoming_lane -> outgoing_lane).
+        """
+        pressure = 0
+        # All controlled movements of this traffic light
+        movements = self.sumo.trafficlight.getControlledLinks(self.ts_id)
+        # movements is a list of lists: [[(incoming, outgoing, via)], ...]
+        for group in movements:
+            for (incoming, outgoing, _) in group:
+                x_in = self.sumo.lane.getLastStepVehicleNumber(incoming)
+                x_out = self.sumo.lane.getLastStepVehicleNumber(outgoing)
+                pressure += (x_in - x_out)
+                
+        return pressure
 
     def _compute_switch_penalty(self, action):
         return 1.0 if action != self.prev_phase else 0.0
 
-
     def _compute_throughput(self):
         current_passed = len(self.sumo.simulation.getArrivedIDList())
         return max(current_passed - self.prev_passed, 0)
-
-
+    
+    def _compute_queue_length(self):
+        total_q = 0
+        for lane in self.in_lanes:
+            vehs = self.sumo.lane.getLastStepVehicleIDs(lane)
+            for v in vehs:
+                if self.sumo.vehicle.getSpeed(v) < 0.1:  # True queue
+                    total_q += 1
+        return total_q
+    
+    def _compute_queue_reduction(self):
+        Q_t = self._compute_queue_length()
+        reduction = self.prev_queue - Q_t
+        self.prev_queue = Q_t
+        return reduction
     # ---------------------------------------------------------
     # Close
     # ---------------------------------------------------------
