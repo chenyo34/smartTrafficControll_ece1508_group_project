@@ -157,9 +157,9 @@ def collect_rollout(env, model, n_steps):
         "values": np.array(values, dtype=np.float32),
         "next_obs": obs,
         "next_value": next_value,
-        "average speeds": np.array(avg_speeds, dtype=np.float32),
+        "avg_speeds": np.array(avg_speeds, dtype=np.float32),
         "throughputs": np.array(throughputs, dtype=np.float32),
-        "average waiting time": np.array(waiting_times, dtype=np.float32)
+        "waiting_times": np.array(waiting_times, dtype=np.float32)
     }
 
     return batch

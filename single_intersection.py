@@ -113,7 +113,7 @@ class TrafficEnv(gym.Env):
         # Evaluation Metrics
         avg_speed=self._computer_avg_speed()
         throughput=self._compute_throughput()
-        waiting_time=self._compute_waiting_time()
+        waiting_time=self._compute_avg_waiting_time()
 
 
         # Update history
@@ -132,7 +132,7 @@ class TrafficEnv(gym.Env):
         truncated = self.steps >= self.max_steps if hasattr(self, 'max_steps') else False 
         info = {}
 
-        return obs, reward, done, truncated, info
+        return obs, reward, done, truncated, info, avg_speed, throughput, waiting_time
 
 
     # ---------------------------------------------------------
