@@ -114,6 +114,8 @@ class TrafficEnv(gym.Env):
         avg_speed=self._computer_avg_speed()
         throughput=self._compute_throughput()
         waiting_time=self._compute_avg_waiting_time()
+        queue_length = self._compute_queue_length()
+        pressure = self._compute_pressure()
 
 
         # Update history
@@ -130,10 +132,17 @@ class TrafficEnv(gym.Env):
             done = False
             
         truncated = self.steps >= self.max_steps if hasattr(self, 'max_steps') else False 
-        info = {}
+        info = {
+            "avg_speed": avg_speed,
+            "throughput": throughput,
+            "waiting_time": waiting_time,
+            "queue_length": queue_length,
+            "pressure": pressure
 
-        return obs, reward, done, truncated, info, avg_speed, throughput, waiting_time
+        }
 
+        # return obs, reward, done, truncated, info, avg_speed, throughput, waiting_time, queue_length
+        return obs, reward, done, truncated, info 
 
     # ---------------------------------------------------------
     # Compute observation
