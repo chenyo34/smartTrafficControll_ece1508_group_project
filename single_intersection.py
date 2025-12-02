@@ -258,7 +258,7 @@ class TrafficEnv(gym.Env):
         return total_q
     
     def _compute_queue_reduction(self):
-        Q_t = self._compute_queue_length()
+        Q_t = self._compute_queue_length() 
         reduction = self.prev_queue - Q_t
         self.prev_queue = Q_t
         return reduction
