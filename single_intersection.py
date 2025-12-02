@@ -20,7 +20,10 @@ class TrafficEnv(gym.Env):
                  c2=0.3, 
                  c3=0.15,
                  c4=0.05,
-                 c5=0.005):
+                 c5=0.005,
+                 noise=False,
+                 noise_sigma=1.0
+):
         super().__init__()
 
         cmd_prefix = ["sumo-gui", "--start"] if gui else ["sumo"]
@@ -35,6 +38,9 @@ class TrafficEnv(gym.Env):
         self.c4 = c4
         self.c5 = c5
 
+        self.noise = noise
+        self.noise_sigma = noise_sigma
+
         self._start_sumo()
         self._identify_lanes()
 
@@ -43,10 +49,19 @@ class TrafficEnv(gym.Env):
         self.action_space = spaces.Discrete(num_phases)
 
         # Gym Observation Space = vehicle count per lane
-        obs_dim = len(self.in_lanes) + len(self.out_lanes)
+        num_in = len(self.in_lanes)
+        num_out = len(self.out_lanes)
+        num_phases = self.action_space.n
+
+        obs_dim = num_in * 3 + num_out + num_phases + 1
+
         self.observation_space = spaces.Box(
-            low=0, high=50, shape=(obs_dim,), dtype=np.float32
+            low=-np.inf,
+            high=np.inf,
+            shape=(obs_dim,),
+            dtype=np.float32
         )
+
 
         self.prev_phase = self.sumo.trafficlight.getPhase(self.ts_id)
         self.prev_passed = len(self.sumo.simulation.getArrivedIDList())
@@ -148,12 +163,41 @@ class TrafficEnv(gym.Env):
     # Compute observation
     # ---------------------------------------------------------
     def _get_observation(self):
-        lane_counts = []
-        for lane in self.in_lanes + self.out_lanes:
-            lane_counts.append(
-                self.sumo.lane.getLastStepVehicleNumber(lane)
-            )
-        return np.array(lane_counts, dtype=np.float32)
+        obs = []
+
+        #  Lane-level features
+        for lane in self.in_lanes:
+            count = self.sumo.lane.getLastStepVehicleNumber(lane)
+            queue = self.sumo.lane.getLastStepHaltingNumber(lane)
+            speed = self.sumo.lane.getLastStepMeanSpeed(lane)
+
+            # -------- Sensor noise --------
+            if hasattr(self, 'noise') and self.noise:
+                count = max(0, count + np.random.normal(0, self.noise_sigma))
+                queue = max(0, queue + np.random.normal(0, self.noise_sigma))
+                speed = max(0, speed + np.random.normal(0, self.noise_sigma))
+
+            obs.extend([count, queue, speed])
+        
+        for lane in self.out_lanes:
+            count = self.sumo.lane.getLastStepVehicleNumber(lane)
+
+            if hasattr(self, 'noise') and self.noise:
+                count = max(0, count + np.random.normal(0, self.noise_sigma))
+
+            obs.append(count)
+
+        # Traffic Light phase information
+        phase = self.sumo.trafficlight.getPhase(self.ts_id)
+        phase_one_hot = np.zeros(self.action_space.n)
+        phase_one_hot[phase] = 1
+        obs.extend(phase_one_hot.tolist())
+
+        # Pressure
+        pressure = self._compute_pressure()
+        obs.append(pressure)
+
+        return np.array(obs, dtype=np.float32)
 
 
     # ---------------------------------------------------------

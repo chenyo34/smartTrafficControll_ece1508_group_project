@@ -112,16 +112,18 @@ def collect_rollout(env, model, n_steps):
     dones = []
     values = []
 
-    avg_speeds=[]
-    throughputs=[]
-    waiting_times=[]
+    avg_speeds = []
+    throughputs = []
+    waiting_times = []
+    queue_length = []
+    pressures = []
 
     obs, info = env.reset()
 
     for step in range(n_steps):
         action, log_prob, value = model.act(obs)
 
-        next_obs, reward, done, truncated, info, avg_speed, throughput, waiting_time = env.step(action)
+        next_obs, reward, done, truncated, info= env.step(action)
         # 这个 env 的 done 一直是 False，目前可以忽略 truncated，按持续任务处理
 
         obs_list.append(obs)
@@ -131,9 +133,11 @@ def collect_rollout(env, model, n_steps):
         dones.append(float(done or truncated))
         values.append(value)
 
-        avg_speeds.append(avg_speed)
-        throughputs.append(throughput)
-        waiting_times.append(waiting_time)
+        avg_speeds.append(info["avg_speed"])
+        throughputs.append(info["throughput"])
+        waiting_times.append(info["waiting_time"])
+        queue_length.append(info["queue_length"])
+        pressures.append(info["pressure"])
 
         obs = next_obs
 
@@ -159,7 +163,10 @@ def collect_rollout(env, model, n_steps):
         "next_value": next_value,
         "avg_speeds": np.array(avg_speeds, dtype=np.float32),
         "throughputs": np.array(throughputs, dtype=np.float32),
-        "waiting_times": np.array(waiting_times, dtype=np.float32)
+        "waiting_times": np.array(waiting_times, dtype=np.float32),
+        "queue_length": np.array(queue_length, dtype=np.float32),
+        "pressures": np.array(pressures, dtype=np.float32)
+
     }
 
     return batch
