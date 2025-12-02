@@ -25,6 +25,9 @@ def train_ppo(
     N_EPOCHS = 10,        
     MINI_BATCH_SIZE = 32, 
     TOTAL_TIMESTEPS = 4096,
+    close_env = False,
+    save_model = True,
+    model_save_path = "ppo_traffic_signal.pth",
 ):
     
 
@@ -144,9 +147,14 @@ def train_ppo(
         appended_throughputs.append(batch_throughputs_return)
         appended_waiting_times.append(batch_waiting_times_return)
 
-    env.close()
-    torch.save(model.state_dict(), "ppo_traffic_signal.pth")
-    print("Training finished, model saved to ppo_traffic_signal.pth")
+    if close_env:
+        env.close()
+    
+    if save_model:
+        torch.save(model.state_dict(), model_save_path)
+        print(f"Training finished, model saved to {model_save_path}")
+    else:
+        print("Training finished")
 
     # Plotting the eval. graphs
     plot_traff_metrics(
