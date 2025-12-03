@@ -75,15 +75,6 @@ class ActorCritic(nn.Module):
 
 
 def compute_gae(rewards, values, dones, next_value, gamma, lam):
-    """
-    rewards: [T]
-    values:  [T]
-    dones:   [T]
-    next_value: 标量 (V(s_{T}))
-    返回:
-      advantages: [T]
-      returns:    [T] = advantages + values
-    """
     T = len(rewards)
     advantages = np.zeros(T, dtype=np.float32)
     last_adv = 0.0
@@ -99,11 +90,6 @@ def compute_gae(rewards, values, dones, next_value, gamma, lam):
 
 
 def collect_rollout(env, model, n_steps):
-    """
-    从当前策略 π_θ 下采样 n_steps 步数据 (可能跨多个 episode)。
-    返回一个字典，包含:
-        obs, actions, logprobs, rewards, dones, values, next_obs, next_value
-    """
 
     obs_list = []
     actions = []

@@ -23,9 +23,9 @@ def train_ppo(
     MAX_GRAD_NORM = 0.5,
     N_STEPS = 256, 
     N_EPOCHS = 10,        
-    MINI_BATCH_SIZE = 32, 
-    TOTAL_TIMESTEPS = 4096,
-    close_env = False,
+    MINI_BATCH_SIZE = 64, 
+    TOTAL_TIMESTEPS = 10_000,
+    close_env = True,
     save_model = True,
     model_save_path = "ppo_traffic_signal.pth",
 ):
@@ -36,8 +36,8 @@ def train_ppo(
     elif model is None:
         raise ValueError("Please provide a valid model instance.")
     
-    obs_dim = env.observation_space.shape[0]
-    act_dim = env.action_space.n
+    # obs_dim = env.observation_space.shape[0]
+    # act_dim = env.action_space.n
     optimizer = optim.Adam(model.parameters(), lr=LR)
 
     # print("Observation dim:", obs_dim)
@@ -55,6 +55,10 @@ def train_ppo(
     appended_waiting_times=[]
 
     while global_step < TOTAL_TIMESTEPS:
+
+        # Adding a debug output to reveal the steps
+        if global_step % 100 == 0:
+            print(f"Debug: Reached {global_step} steps")
         
         # 1) Global Step: Roll-out sampling
         batch = collect_rollout(env, model, N_STEPS)
@@ -69,11 +73,10 @@ def train_ppo(
         next_value = batch["next_value"]
 
         # 2) Global Step:  Extract the main metric result from the batch
-        avg_speeds=batch["avg_speeds"]
-        throughputs=batch["throughputs"]
-        waiting_times=batch["waiting_times"]
-
-        
+        avg_speeds = batch["avg_speeds"]
+        throughputs = batch["throughputs"]
+        waiting_times = batch["waiting_times"]
+        queue_lengths = batch["queue_length"]
 
         # 3)  Global Step: Calcuate the advantages and the returns
         advantages, returns = compute_gae(
@@ -141,11 +144,22 @@ def train_ppo(
         batch_speeds_return = avg_speeds.mean()
         batch_throughputs_return = throughputs.mean()
         batch_waiting_times_return = waiting_times.mean()
+        batch_queue_length_return = queue_lengths.mean()
 
         appended_rewards.append(batch_rewards_return)
         appended_avg_speeds.append(batch_speeds_return)
         appended_throughputs.append(batch_throughputs_return)
         appended_waiting_times.append(batch_waiting_times_return)
+
+        # Debug printout: key metrics during training
+        progress = (global_step / TOTAL_TIMESTEPS) * 100
+        print(
+            f"[Training] Step {global_step}/{TOTAL_TIMESTEPS} ({progress:.1f}%) | "
+            f"Reward: {batch_rewards_return:.3f} | "
+            f"Waiting time: {batch_waiting_times_return:.3f} | "
+            f"Queue length: {batch_queue_length_return:.3f} | "
+            f"Throughput: {batch_throughputs_return:.3f}"
+        )
 
     if close_env:
         env.close()

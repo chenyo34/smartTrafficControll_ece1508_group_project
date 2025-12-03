@@ -12,6 +12,7 @@ import torch
 from single_intersection import TrafficEnv
 from train import train_ppo
 from ppo import ActorCritic
+import traci
 
 
 def evaluate_agent(
@@ -172,29 +173,38 @@ def compute_metrics(eval_results):
 def run_experiments(
     sumo_cmd,
     tls_id,
-    eval_steps=1000,
-    train_timesteps=4096,
+    reward_configs,
+    noise_options,
+    eval_steps,
     seed=42,
-    metric_for_selection="avg_reward"  # Metric to use for selecting best config
+    metric_for_selection="avg_reward",  # Metric to use for selecting best config
+    train_kwargs=None,  # extra keyword arguments forwarded to train_ppo
 ):
     """
+    Close any existing TraCI connection
     Two-stage experiment:
     Stage 1: Loop through reward functions and noise combinations with RL agent,
              find the best parameter pair
     Stage 2: Run both heuristic and RL agent on the best parameter pair
     """
     
-    # Define experiment parameters
-    noise_options = [False, True]
+    # # Define experiment parameters
+    # noise_options = [False, True]
     
-    # Define different reward function configurations
-    # Each tuple is (name, c1, c2, c3, c4, c5)
-    reward_configs = [
-        ("default", 1.0, 0.3, 0.15, 0.05, 0.005),
-        ("queue_focused", 2.0, 0.5, 0.1, 0.05, 0.01),
-        ("pressure_focused", 1.0, 0.2, 0.3, 0.05, 0.01),
-        ("throughput_focused", 0.5, 0.2, 0.1, 0.05, 0.02),
-    ]
+    # # Define different reward function configurations
+    # # Each tuple is (name, c1, c2, c3, c4, c5)
+    # reward_configs = [
+    #     ("default", 1.0, 0.3, 0.15, 0.05, 0.005),
+    #     ("queue_focused", 2.0, 0.5, 0.1, 0.05, 0.01),
+    #     ("pressure_focused", 1.0, 0.2, 0.3, 0.05, 0.01),
+    #     ("throughput_focused", 0.5, 0.2, 0.1, 0.05, 0.02),
+    # ]
+
+    try:
+        if traci.isLoaded():
+            traci.close(False)
+    except Exception:
+        pass
     
     # Results summary header
     results_summary_header = [
@@ -240,6 +250,8 @@ def run_experiments(
     
     for noise in noise_options:
         for reward_config in reward_configs:
+
+            
             experiment_id += 1
             reward_name, c1, c2, c3, c4, c5 = reward_config
             
@@ -270,22 +282,43 @@ def run_experiments(
             model_path = f"models/stage1_exp{experiment_id}_{reward_name}_noise{noise}.pth"
             os.makedirs("models", exist_ok=True)
             
+            # Merge base training config with caller‑provided overrides
+            base_train_kwargs = dict(
+                close_env=True,  # close SUMO after training to avoid multiple active connections
+                save_model=True,
+                model_save_path=model_path,
+            )
+            if train_kwargs:
+                base_train_kwargs.update(train_kwargs)
+
             train_ppo(
                 model=model,
                 env=env,
-                TOTAL_TIMESTEPS=train_timesteps,
-                close_env=False,
-                save_model=True,
-                model_save_path=model_path
+                **base_train_kwargs,
             )
             
             model.eval()
+            
+            # Create a new environment for evaluation since training closed the previous one
+            print(f"Creating new environment for evaluation...")
+            eval_env = TrafficEnv(
+                sumo_cmd=sumo_cmd,
+                tls_id=tls_id,
+                gui=False,
+                noise=noise,
+                noise_sigma=1.0,
+                c1=c1,
+                c2=c2,
+                c3=c3,
+                c4=c4,
+                c5=c5
+            )
             
             # Evaluate RL agent
             print(f"Evaluating RL agent...")
             eval_filename = f"stage1_exp{experiment_id}_rl_{reward_name}_noise{noise}"
             eval_results = evaluate_agent(
-                env=env,
+                env=eval_env,
                 agent="rl",
                 model=model,
                 steps=eval_steps,
