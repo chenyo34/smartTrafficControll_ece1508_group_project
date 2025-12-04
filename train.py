@@ -25,7 +25,7 @@ def train_ppo(
     N_EPOCHS = 10,        
     MINI_BATCH_SIZE = 32, 
     TOTAL_TIMESTEPS = 4096,
-    close_env = False,
+    close_env = True,
     save_model = True,
     model_save_path = "ppo_traffic_signal.pth",
 ):
@@ -96,11 +96,11 @@ def train_ppo(
         dataset_size = N_STEPS
         indices = np.arange(dataset_size)
 
-        for _ in range(N_EPOCHS):
+        for epoch in range(N_EPOCHS):
             # Print debug info 
 
             np.random.shuffle(indices)
-            for start in range(0, dataset_size, MINI_BATCH_SIZE):
+            for step, start in enumerate(range(0, dataset_size, MINI_BATCH_SIZE)):
                 end = start + MINI_BATCH_SIZE
                 mb_idx = indices[start:end]
 
@@ -134,7 +134,12 @@ def train_ppo(
                 nn.utils.clip_grad_norm_(model.parameters(), MAX_GRAD_NORM)
                 optimizer.step()
 
-
+                # Print loss information for debugging
+                print(f"Epoch {epoch + 1}/{N_EPOCHS}, Step {step + 1}/{len(range(0, dataset_size, MINI_BATCH_SIZE))}:")
+                print(f"  Actor Loss: {actor_loss.item():.4f}")
+                print(f"  Critic Loss: {critic_loss.item():.4f}")
+                print(f"  Entropy Loss: {entropy_loss.item():.4f}")
+                print(f"  Total Loss: {loss.item():.4f}")
 
         # 4) Compute the result for the current batch for metric measurement 
         batch_rewards_return = rewards_arr.mean()
@@ -142,12 +147,20 @@ def train_ppo(
         batch_throughputs_return = throughputs.mean()
         batch_waiting_times_return = waiting_times.mean()
 
+        # Print batch metrics
+        print(f"  Batch Metrics:")
+        print(f"    Average Reward: {batch_rewards_return:.4f}")
+        print(f"    Average Speed: {batch_speeds_return:.4f}")
+        print(f"    Average Throughput: {batch_throughputs_return:.4f}")
+        print(f"    Average Waiting Time: {batch_waiting_times_return:.4f}")
+
         appended_rewards.append(batch_rewards_return)
         appended_avg_speeds.append(batch_speeds_return)
         appended_throughputs.append(batch_throughputs_return)
         appended_waiting_times.append(batch_waiting_times_return)
 
     if close_env:
+        print("Closing environment...")
         env.close()
     
     if save_model:
@@ -157,6 +170,7 @@ def train_ppo(
         print("Training finished")
 
     # Plotting the eval. graphs
+    print("Plotting training metrics...")
     plot_traff_metrics(
         appended_rewards,
         appended_avg_speeds,

@@ -172,8 +172,11 @@ def compute_metrics(eval_results):
 def run_experiments(
     sumo_cmd,
     tls_id,
+    reward_configs,
+    noise_options,
+    train_model_config,
     eval_steps=1000,
-    train_timesteps=4096,
+    # train_timesteps=4096,
     seed=42,
     metric_for_selection="avg_reward"  # Metric to use for selecting best config
 ):
@@ -189,12 +192,12 @@ def run_experiments(
     
     # Define different reward function configurations
     # Each tuple is (name, c1, c2, c3, c4, c5)
-    reward_configs = [
-        ("default", 1.0, 0.3, 0.15, 0.05, 0.005),
-        ("queue_focused", 2.0, 0.5, 0.1, 0.05, 0.01),
-        ("pressure_focused", 1.0, 0.2, 0.3, 0.05, 0.01),
-        ("throughput_focused", 0.5, 0.2, 0.1, 0.05, 0.02),
-    ]
+    # reward_configs = [
+    #     ("default", 1.0, 0.3, 0.15, 0.05, 0.005),
+    #     ("queue_focused", 2.0, 0.5, 0.1, 0.05, 0.01),
+    #     ("pressure_focused", 1.0, 0.2, 0.3, 0.05, 0.01),
+    #     ("throughput_focused", 0.5, 0.2, 0.1, 0.05, 0.02),
+    # ]
     
     # Results summary header
     results_summary_header = [
@@ -273,13 +276,29 @@ def run_experiments(
             train_ppo(
                 model=model,
                 env=env,
-                TOTAL_TIMESTEPS=train_timesteps,
                 close_env=False,
                 save_model=True,
-                model_save_path=model_path
+                model_save_path=model_path,
+                **train_model_config
             )
             
+
+
             model.eval()
+
+            env.close()
+            env = TrafficEnv(
+                sumo_cmd=sumo_cmd,
+                tls_id=tls_id,
+                gui=False,
+                noise=noise,
+                noise_sigma=1.0,
+                c1=c1,
+                c2=c2,
+                c3=c3,
+                c4=c4,
+                c5=c5
+            )
             
             # Evaluate RL agent
             print(f"Evaluating RL agent...")
