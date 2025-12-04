@@ -47,8 +47,8 @@ def evaluate_agent(
     done = False 
 
     for step in range(steps):
-        if render:
-            env.render()
+        # if render:
+        #     env.render()
 
         #################################
         ###  Action Selection ###
@@ -60,8 +60,6 @@ def evaluate_agent(
                 phase_timer = 0
             action = cur_phase
             phase_timer += 1
-        elif agent == "random":
-            action = env.action_space.sample()
         elif agent == "rl" and model is not None:
             # RL Agent: use trained model
             with torch.no_grad():
@@ -177,6 +175,7 @@ def run_experiments(
     noise_options,
     eval_steps,
     seed=42,
+    phase_duration=10,  # Phase duration for heuristic agent
     metric_for_selection="avg_reward",  # Metric to use for selecting best config
     train_kwargs=None,  # extra keyword arguments forwarded to train_ppo
 ):
@@ -440,6 +439,7 @@ def run_experiments(
             agent=agent,
             model=model,
             steps=eval_steps,
+            phase_duration=phase_duration,  # Pass phase_duration for heuristic agent
             seed=seed,
             to_save=eval_filename
         )
