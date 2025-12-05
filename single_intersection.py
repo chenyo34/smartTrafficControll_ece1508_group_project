@@ -115,48 +115,56 @@ class TrafficEnv(gym.Env):
     # ---------------------------------------------------------
     def step(self, action):
 
-        self.steps += 1
-        # Apply traffic light phase
-        self.sumo.trafficlight.setPhase(self.ts_id, int(action))
+        avg_speed = 0.0
+        throughput = 0.0
+        waiting_time = 0.0
+        queue_length = 0.0
+        pressure = 0.0
 
-        # Move simulation by 1 step
-        self.sumo.simulationStep()
+        
+        for _ in range(2):
+            self.steps += 1
+            # Apply traffic light phase
+            self.sumo.trafficlight.setPhase(self.ts_id, int(action))
 
-        # Reward
-        reward = self._compute_reward(action)
+            # Move simulation by 1 step
+            self.sumo.simulationStep()
 
-        # Evaluation Metrics
-        avg_speed=self._computer_avg_speed()
-        throughput=self._compute_throughput()
-        waiting_time=self._compute_avg_waiting_time()
-        queue_length = self._compute_queue_length()
-        pressure = self._compute_pressure()
-
-
-        # Update history
-        self.prev_phase = action
-        self.prev_passed = len(self.sumo.simulation.getArrivedIDList())
-
-        # Observation
-        obs = self._get_observation()
-
-        # Check collision
-        if self.sumo.simulation.getCollidingVehiclesNumber() > 0:
-            done = True
-        else: 
-            done = False
+            # Reward
+            reward = self._compute_reward(action)
             
-        truncated = self.steps >= self.max_steps if hasattr(self, 'max_steps') else False 
-        info = {
-            "avg_speed": avg_speed,
-            "throughput": throughput,
-            "waiting_time": waiting_time,
-            "queue_length": queue_length,
-            "pressure": pressure
+            # Evaluation Metrics
+            avg_speed=self._computer_avg_speed()
+            throughput=self._compute_throughput()
+            waiting_time=self._compute_avg_waiting_time()
+            queue_length = self._compute_queue_length()
+            pressure = self._compute_pressure()
 
-        }
+            # Update history
+            self.prev_phase = action
+            self.prev_passed = len(self.sumo.simulation.getArrivedIDList())
 
-        # return obs, reward, done, truncated, info, avg_speed, throughput, waiting_time, queue_length
+            # Observation
+            obs = self._get_observation()
+            info = {
+                "avg_speed": avg_speed,
+                "throughput": throughput,
+                "waiting_time": waiting_time,
+                "queue_length": queue_length,
+                "pressure": pressure
+            }
+
+            truncated = self.steps >= self.max_steps if hasattr(self, 'max_steps') else False 
+
+            done = False
+            # Check collision
+            if self.sumo.simulation.getCollidingVehiclesNumber() > 0:
+                done = True
+                # Print out the step information
+                print(f"Collision detected at step {self.steps}. Ending episode.")
+                return obs, reward, done, truncated, info 
+
+        # return obs, reward, done, truncated, info (avg_speed, throughput, waiting_time, queue_length)
         return obs, reward, done, truncated, info 
 
     # ---------------------------------------------------------
@@ -292,3 +300,48 @@ class TrafficEnv(gym.Env):
     def close(self):
         traci.close()
 
+if __name__ == "__main__":
+
+    from single_intersection import TrafficEnv
+    import numpy as np
+    import os 
+    import matplotlib.pyplot as plt
+    import time
+    from sumo_rl import SumoEnvironment
+    import torch
+    # Print the sumo environment path for further verification 
+    print("SUMO HOME:", os.environ.get("SUMO_HOME"))
+    
+    sumo_cmd = [
+        # "--start", # Uncomment this line while using the GUI for visualization 
+        "--no-warnings", "true", # Uncomment this line to 
+        "-n", "single-intersection.net.xml",
+        "-r", "single-intersection-vertical.rou.xml",
+        "--step-length", "1.0"
+    ]
+
+    TLS_ID = "t"    
+
+    # import traci
+    # traci.close(False)
+
+    # Initialize SUMO environment
+    env = TrafficEnv(
+        sumo_cmd=sumo_cmd,
+        tls_id=TLS_ID,
+        gui=False   # show SUMO GUI
+    )
+
+    # print the action and observation space
+    print("Action Space:", env.action_space)
+    print("Observation Space:", env.observation_space)
+
+    obs, info = env.reset()
+    done = False
+
+    # while not done:
+    #     action = env.action_space.sample()
+    #     obs, reward, done, truncated, info = env.step(action)
+    #     print(f"Step Reward: {reward}, Info: {info}")
+
+    env.close()

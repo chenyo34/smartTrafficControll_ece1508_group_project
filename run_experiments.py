@@ -10,6 +10,7 @@ import csv
 import numpy as np
 import torch
 from single_intersection import TrafficEnv
+# from test_single_intersection import TrafficEnv
 from train import train_ppo
 from ppo import ActorCritic
 
@@ -131,12 +132,12 @@ def compute_metrics(eval_results):
     avg_throughput = np.mean(throughputs)
     avg_speed = np.mean(speeds)
     
-    # Best metrics (peak performance)
-    best_reward = np.max(rewards)
-    best_waiting_time = np.min(waiting_times)  # Lower is better
-    best_queue_length = np.min(queue_lengths)  # Lower is better
-    best_throughput = np.max(throughputs)      # Higher is better
-    best_speed = np.max(speeds)                # Higher is better
+    # # Best metrics (peak performance)
+    # best_reward = np.max(rewards)
+    # best_waiting_time = np.min(waiting_times)  # Lower is better
+    # best_queue_length = np.min(queue_lengths)  # Lower is better
+    # best_throughput = np.max(throughputs)      # Higher is better
+    # best_speed = np.max(speeds)                # Higher is better
     
     # Last N steps average (converged/stable performance)
     last_n = min(100, len(rewards))
@@ -157,11 +158,11 @@ def compute_metrics(eval_results):
         "avg_pressure": avg_pressure,
         "avg_throughput": avg_throughput,
         "avg_speed": avg_speed,
-        "best_reward": best_reward,
-        "best_waiting_time": best_waiting_time,
-        "best_queue_length": best_queue_length,
-        "best_throughput": best_throughput,
-        "best_speed": best_speed,
+        # "best_reward": best_reward,
+        # "best_waiting_time": best_waiting_time,
+        # "best_queue_length": best_queue_length,
+        # "best_throughput": best_throughput,
+        # "best_speed": best_speed,
         "last100_avg_reward": last100_avg_reward,
         "last100_avg_waiting_time": last100_avg_waiting_time,
         "last100_avg_throughput": last100_avg_throughput,
@@ -215,11 +216,11 @@ def run_experiments(
         "avg_throughput",
         "avg_speed",
         # Best metrics (peak performance)
-        "best_reward",
-        "best_waiting_time",
-        "best_queue_length",
-        "best_throughput",
-        "best_speed",
+        # "best_reward",
+        # "best_waiting_time",
+        # "best_queue_length",
+        # "best_throughput",
+        # "best_speed",
         # Last N steps average (converged performance)
         "last100_avg_reward",
         "last100_avg_waiting_time",
@@ -328,11 +329,11 @@ def run_experiments(
                     metrics["avg_pressure"],
                     metrics["avg_throughput"],
                     metrics["avg_speed"],
-                    metrics["best_reward"],
-                    metrics["best_waiting_time"],
-                    metrics["best_queue_length"],
-                    metrics["best_throughput"],
-                    metrics["best_speed"],
+                    # metrics["best_reward"],
+                    # metrics["best_waiting_time"],
+                    # metrics["best_queue_length"],
+                    # metrics["best_throughput"],
+                    # metrics["best_speed"],
                     metrics["last100_avg_reward"],
                     metrics["last100_avg_waiting_time"],
                     metrics["last100_avg_throughput"],
@@ -446,11 +447,6 @@ def run_experiments(
                 metrics["avg_pressure"],
                 metrics["avg_throughput"],
                 metrics["avg_speed"],
-                metrics["best_reward"],
-                metrics["best_waiting_time"],
-                metrics["best_queue_length"],
-                metrics["best_throughput"],
-                metrics["best_speed"],
                 metrics["last100_avg_reward"],
                 metrics["last100_avg_waiting_time"],
                 metrics["last100_avg_throughput"],

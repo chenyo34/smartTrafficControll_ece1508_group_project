@@ -53,12 +53,16 @@ def train_ppo(
     appended_avg_speeds=[]
     appended_throughputs=[]
     appended_waiting_times=[]
+    appended_pressures=[]
 
     while global_step < TOTAL_TIMESTEPS:
         
         # 1) Global Step: Roll-out sampling
-        batch = collect_rollout(env, model, N_STEPS)
+        if global_step + N_STEPS > TOTAL_TIMESTEPS:
+            N_STEPS = TOTAL_TIMESTEPS - global_step
         global_step += N_STEPS
+        batch = collect_rollout(env, model, N_STEPS)
+        
 
         obs_arr = batch["obs"] 
         actions_arr = batch["actions"]
@@ -72,6 +76,8 @@ def train_ppo(
         avg_speeds=batch["avg_speeds"]
         throughputs=batch["throughputs"]
         waiting_times=batch["waiting_times"]
+        queue_length=batch["queue_length"]
+        pressures=batch["pressures"]
 
         
 
@@ -135,29 +141,46 @@ def train_ppo(
                 optimizer.step()
 
                 # Print loss information for debugging
-                print(f"Epoch {epoch + 1}/{N_EPOCHS}, Step {step + 1}/{len(range(0, dataset_size, MINI_BATCH_SIZE))}:")
-                print(f"  Actor Loss: {actor_loss.item():.4f}")
-                print(f"  Critic Loss: {critic_loss.item():.4f}")
-                print(f"  Entropy Loss: {entropy_loss.item():.4f}")
-                print(f"  Total Loss: {loss.item():.4f}")
+                # print(f"Epoch {epoch + 1}/{N_EPOCHS}, Step {step + 1}/{len(range(0, dataset_size, MINI_BATCH_SIZE))}:")
+                # print(f"  Actor Loss: {actor_loss.item():.4f}")
+                # print(f"  Critic Loss: {critic_loss.item():.4f}")
+                # print(f"  Entropy Loss: {entropy_loss.item():.4f}")
+                # print(f"  Total Loss: {loss.item():.4f}")
 
         # 4) Compute the result for the current batch for metric measurement 
         batch_rewards_return = rewards_arr.mean()
         batch_speeds_return = avg_speeds.mean()
         batch_throughputs_return = throughputs.mean()
         batch_waiting_times_return = waiting_times.mean()
+        batch_queue_length_return = queue_length.mean()
+        batch_pressure_return = pressures.mean()
 
-        # Print batch metrics
-        print(f"  Batch Metrics:")
-        print(f"    Average Reward: {batch_rewards_return:.4f}")
-        print(f"    Average Speed: {batch_speeds_return:.4f}")
-        print(f"    Average Throughput: {batch_throughputs_return:.4f}")
-        print(f"    Average Waiting Time: {batch_waiting_times_return:.4f}")
+
+
+        # Debug printout: key metrics during training
+        progress = (global_step / TOTAL_TIMESTEPS) * 100
+        print("="*66)
+        print(
+            f"[Training] Step {global_step}/{TOTAL_TIMESTEPS} ({progress:.1f}%) | "
+            f"Reward: {batch_rewards_return:.3f} | "
+            f"Waiting time: {batch_waiting_times_return:.3f} | "
+            f"Queue length: {batch_queue_length_return:.3f} | "
+            f"Throughput: {batch_throughputs_return:.3f} |"
+            f"Avg Speed: {batch_speeds_return:.3f} | "
+            f"Pressure: {batch_pressure_return:.3f}"
+        )
+        print("="*66)
 
         appended_rewards.append(batch_rewards_return)
         appended_avg_speeds.append(batch_speeds_return)
         appended_throughputs.append(batch_throughputs_return)
         appended_waiting_times.append(batch_waiting_times_return)
+        appended_pressures.append(batch_pressure_return)
+
+        # appended_rewards.append(batch_rewards_return)
+        # appended_avg_speeds.append(batch_speeds_return)
+        # appended_throughputs.append(batch_throughputs_return)
+        # appended_waiting_times.append(batch_waiting_times_return)
 
     if close_env:
         print("Closing environment...")
