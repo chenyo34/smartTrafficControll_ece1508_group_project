@@ -27,7 +27,7 @@ class ActorCritic(nn.Module):
     def forward(self, x):
         """
         x: [batch, obs_dim]
-        返回:
+        return:
           logits: [batch, act_dim]
           value:  [batch]
         """
@@ -38,7 +38,7 @@ class ActorCritic(nn.Module):
 
     def act(self, obs):
         """
-        输入单步 obs (numpy array)，返回:
+        input: obs (numpy array)，return:
           action: int
           log_prob: float
           value: float
@@ -57,10 +57,10 @@ class ActorCritic(nn.Module):
 
     def evaluate_actions(self, obs_batch, act_batch):
         """
-        在训练时用:
+        Used during training:
           obs_batch: [batch, obs_dim]
           act_batch: [batch]
-        返回:
+        return:
           log_probs: [batch]
           entropy:   [batch]
           values:    [batch]
@@ -79,8 +79,8 @@ def compute_gae(rewards, values, dones, next_value, gamma, lam):
     rewards: [T]
     values:  [T]
     dones:   [T]
-    next_value: 标量 (V(s_{T}))
-    返回:
+    next_value:  (V(s_{T}))
+    return:
       advantages: [T]
       returns:    [T] = advantages + values
     """
@@ -100,8 +100,8 @@ def compute_gae(rewards, values, dones, next_value, gamma, lam):
 
 def collect_rollout(env, model, n_steps):
     """
-    从当前策略 π_θ 下采样 n_steps 步数据 (可能跨多个 episode)。
-    返回一个字典，包含:
+    From the current strategy π_θ sampling n_steps data (It may span multiple times episode)。
+    Return a dictionary that contains:
         obs, actions, logprobs, rewards, dones, values, next_obs, next_value
     """
 

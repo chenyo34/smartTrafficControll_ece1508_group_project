@@ -9,14 +9,17 @@ The system includes a custom Gym-compatible environment, experiment runner, and 
 
 ```
 .
+
 ├── ppo.py                          # PPO agent (Actor-Critic, GAE, rollout)
 ├── train.py                        # Training loop for PPO 
 ├── run_experiments.py              # Automated experiments & evaluation pipeline
 ├── single_intersection.py          # Custom SUMO-Gym environment wrapper
 ├── single-intersection.net.xml     # SUMO network file
 ├── single-intersection-vertical.rou.xml   # Traffic flow file
+├── environment.yaml                # Full reproducible Conda environment
 ├── main.ipynb                      # Notebook for testing
 └── models/                         # Trained models (generated after training)
+
 ```
 
 ---
@@ -42,12 +45,26 @@ setx SUMO_HOME "C:\Program Files (x86)\Sumo"
 
 ---
 
-### **2. Install Python Dependencies**
+### **2. Create the Conda Environment**
 
 ```
-pip install torch gymnasium numpy matplotlib sumo-rl
-```
+conda env create -f environment.yaml
+conda activate smart-traffic-ppo
 
+```
+environment.yaml installs:
+
+Python 3.10
+
+PyTorch
+
+Gymnasium
+
+SUMO-RL / TraCI
+
+NumPy, Matplotlib, Requests
+
+All RL training dependencies
 ---
 
 ## 2. Quick Environment Test
@@ -72,7 +89,8 @@ Observation Space: Box(...)
 Run:
 
 ```
-python train.py
+python main.py
+
 ```
 
 This will:
@@ -88,29 +106,7 @@ models/ppo_traffic_signal.pth
 
 ---
 
-## 4. Running Experiments
 
-To benchmark RL vs heuristic under different settings:
-
-```
-python run_experiments.py
-```
-
-This script:
-
-- Trains RL agents using several reward functions  
-- Evaluates each configuration  
-- Selects the best-performing reward weights  
-- Runs final comparison between RL and heuristic  
-- Saves outputs to:
-
-```
-results/experiments_summary.csv
-results/*_evaluation_records.csv
-models/*.pth
-```
-
----
 
 ## 5. Observation & Action Space
 

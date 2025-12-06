@@ -68,17 +68,17 @@ class TrafficEnv(gym.Env):
         self.prev_queue = 0
 
 
-    # ---------------------------------------------------------
+
     # SUMO START
-    # ---------------------------------------------------------
+
     def _start_sumo(self):
         traci.start(self.sumo_cmd)
         self.sumo = traci
 
 
-    # ---------------------------------------------------------
+
     # Auto-detect incoming/outgoing lanes
-    # ---------------------------------------------------------
+
     def _identify_lanes(self):
         self.in_lanes = []
         self.out_lanes = []
@@ -92,9 +92,9 @@ class TrafficEnv(gym.Env):
                     self.out_lanes.append(outgoing)
 
 
-    # ---------------------------------------------------------
+   
     # Reset
-    # ---------------------------------------------------------
+
     def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
 
@@ -110,9 +110,9 @@ class TrafficEnv(gym.Env):
         return obs, {}
 
 
-    # ---------------------------------------------------------
+
     # Step
-    # ---------------------------------------------------------
+
     def step(self, action):
 
         avg_speed = 0.0
@@ -167,9 +167,8 @@ class TrafficEnv(gym.Env):
         # return obs, reward, done, truncated, info (avg_speed, throughput, waiting_time, queue_length)
         return obs, reward, done, truncated, info 
 
-    # ---------------------------------------------------------
     # Compute observation
-    # ---------------------------------------------------------
+
     def _get_observation(self):
         obs = []
 
@@ -208,9 +207,9 @@ class TrafficEnv(gym.Env):
         return np.array(obs, dtype=np.float32)
 
 
-    # ---------------------------------------------------------
+
     # Reward function
-    # ---------------------------------------------------------
+
     def _compute_reward(self, action):
         queue_reduction = self._compute_queue_reduction()
         queue_abs = self._compute_queue_length()
@@ -294,9 +293,9 @@ class TrafficEnv(gym.Env):
             return 0.0
         return np.mean(wts)
 
-    # ---------------------------------------------------------
+
     # Close
-    # ---------------------------------------------------------
+
     def close(self):
         traci.close()
 

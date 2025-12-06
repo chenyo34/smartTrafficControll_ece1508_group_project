@@ -41,7 +41,7 @@ def evaluate_agent(
         "reward"
     ]
     
-    # Initialization -> simulation loops
+# Initialization -> simulation loops
     obs, info = env.reset(seed=seed)
     cur_phase, phase_timer = 0, 0
     done = False 
@@ -50,9 +50,9 @@ def evaluate_agent(
         if render:
             env.render()
 
-        #################################
-        ###  Action Selection ###
-        #################################
+
+###  Action Selection 
+
         if agent == "heuristic":
             # Determine the action
             if phase_timer >= phase_duration:
@@ -69,15 +69,14 @@ def evaluate_agent(
         else:
             raise ValueError(f"Unknown agent type: {agent} or model not provided for RL agent")
 
-        #################################
-        ###  Feed action and observe ###
-        #################################
+
+###  Feed action and observe 
+
         obs, reward, done, truncated, info = env.step(action)
         sim_time = env.sumo.simulation.getTime()
 
-        #######################################
-        ###  Collect and store the metrics ###
-        #######################################
+###  Collect and store the metrics 
+
         sim_records.append([
             step,
             sim_time,
@@ -232,10 +231,9 @@ def run_experiments(
     
     results_summary = []
     stage1_results = []  # Store stage 1 results to find best config
-    
-    # ============================================================================
-    # STAGE 1: Find best reward function and noise combination using RL agent
-    # ============================================================================
+  
+ # STAGE 1: Find best reward function and noise combination using RL agent
+
     print(f"\n{'='*80}")
     print("STAGE 1: Finding best reward function and noise combination (RL agent)")
     print(f"{'='*80}\n")
@@ -372,9 +370,9 @@ def run_experiments(
         print("ERROR: No results from Stage 1!")
         return results_summary
     
-    # ============================================================================
-    # STAGE 2: Run both heuristic and RL agent on best configuration
-    # ============================================================================
+ 
+ # STAGE 2: Run both heuristic and RL agent on best configuration
+
     print(f"\n{'='*80}")
     print("STAGE 2: Running Heuristic and RL Agent on best configuration")
     print(f"{'='*80}\n")
