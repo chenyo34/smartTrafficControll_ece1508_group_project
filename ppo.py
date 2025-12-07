@@ -14,6 +14,7 @@ class ActorCritic(nn.Module):
         super().__init__()
         hidden_size = 64
 
+        # Shared MLP feature extractor
         self.shared = nn.Sequential(
             nn.Linear(obs_dim, hidden_size),
             nn.Tanh(),
@@ -21,6 +22,7 @@ class ActorCritic(nn.Module):
             nn.Tanh()
         )
 
+        # Outputs
         self.policy_head = nn.Linear(hidden_size, act_dim)
         self.value_head = nn.Linear(hidden_size, 1)
 
@@ -44,9 +46,13 @@ class ActorCritic(nn.Module):
           value: float
         """
         obs_t = torch.tensor(obs, dtype=torch.float32).unsqueeze(0)
+
+        # No gradient needed during action selection
         with torch.no_grad():
             logits, value = self.forward(obs_t)
             dist = Categorical(logits=logits)
+
+            # Sample from π(a|s)
             action = dist.sample()
             log_prob = dist.log_prob(action)
         return (
@@ -88,8 +94,9 @@ def compute_gae(rewards, values, dones, next_value, gamma, lam):
     advantages = np.zeros(T, dtype=np.float32)
     last_adv = 0.0
 
+    # Reverse-time computation of GAE
     for t in reversed(range(T)):
-        mask = 1.0 - dones[t]  # done=True 时不再 bootstrap
+        mask = 1.0 - dones[t] # If episode ended, no bootstrapping
         delta = rewards[t] + gamma * next_value * mask - values[t]
         advantages[t] = last_adv = delta + gamma * lam * mask * last_adv
         next_value = values[t]
@@ -105,6 +112,7 @@ def collect_rollout(env, model, n_steps):
         obs, actions, logprobs, rewards, dones, values, next_obs, next_value
     """
 
+    # Buffers
     obs_list = []
     actions = []
     logprobs = []
@@ -118,13 +126,15 @@ def collect_rollout(env, model, n_steps):
     queue_length = []
     pressures = []
 
+    # Reset environment at start of rollout
     obs, info = env.reset()
 
     for step in range(n_steps):
+        # Select action from current policy
         action, log_prob, value = model.act(obs)
 
+        # Step the environment
         next_obs, reward, done, truncated, info= env.step(action)
-        # 这个 env 的 done 一直是 False，目前可以忽略 truncated，按持续任务处理
 
         obs_list.append(obs)
         actions.append(action)
@@ -146,12 +156,13 @@ def collect_rollout(env, model, n_steps):
         
         
 
-    # rollout 结束后，用最后一个状态估计 V(s_T)
+    # Compute bootstrap value V(s_T)
     obs_t = torch.tensor(obs, dtype=torch.float32).unsqueeze(0)
     with torch.no_grad():
         _, next_value_t = model.forward(obs_t)
     next_value = next_value_t.cpu().item()
 
+    # Pack everything into a batch dict
     batch = {
         "obs": np.array(obs_list, dtype=np.float32),
         "actions": np.array(actions, dtype=np.int64),

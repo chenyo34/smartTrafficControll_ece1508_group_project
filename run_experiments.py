@@ -41,7 +41,7 @@ def evaluate_agent(
         "reward"
     ]
     
-# Initialization -> simulation loops
+    # Initialization -> simulation loops
     obs, info = env.reset(seed=seed)
     cur_phase, phase_timer = 0, 0
     done = False 
@@ -49,10 +49,9 @@ def evaluate_agent(
     for step in range(steps):
         if render:
             env.render()
-
-
-###  Action Selection 
-
+            
+        
+        # Action Selection 
         if agent == "heuristic":
             # Determine the action
             if phase_timer >= phase_duration:
@@ -68,15 +67,12 @@ def evaluate_agent(
                 action, _, _ = model.act(obs)
         else:
             raise ValueError(f"Unknown agent type: {agent} or model not provided for RL agent")
-
-
-###  Feed action and observe 
-
+        
+        # Feed action and observe 
         obs, reward, done, truncated, info = env.step(action)
         sim_time = env.sumo.simulation.getTime()
-
-###  Collect and store the metrics 
-
+        
+        # Collect and store the metrics 
         sim_records.append([
             step,
             sim_time,
@@ -116,6 +112,7 @@ def compute_metrics(eval_results):
     if not eval_results:
         return None
     
+    # Column extraction (using fixed header positions)
     rewards = [r[-1] for r in eval_results]  # Last column is reward
     waiting_times = [r[2] for r in eval_results]
     queue_lengths = [r[3] for r in eval_results]
@@ -280,8 +277,6 @@ def run_experiments(
                 model_save_path=model_path,
                 **train_model_config
             )
-            
-
 
             model.eval()
 

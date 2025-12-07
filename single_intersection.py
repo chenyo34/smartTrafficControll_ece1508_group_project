@@ -75,8 +75,6 @@ class TrafficEnv(gym.Env):
         traci.start(self.sumo_cmd)
         self.sumo = traci
 
-
-
     # Auto-detect incoming/outgoing lanes
 
     def _identify_lanes(self):
@@ -91,10 +89,7 @@ class TrafficEnv(gym.Env):
                 if outgoing not in self.out_lanes:
                     self.out_lanes.append(outgoing)
 
-
-   
     # Reset
-
     def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
 
@@ -109,10 +104,7 @@ class TrafficEnv(gym.Env):
         obs = self._get_observation()
         return obs, {}
 
-
-
     # Step
-
     def step(self, action):
 
         avg_speed = 0.0
@@ -124,6 +116,7 @@ class TrafficEnv(gym.Env):
         
         for _ in range(2):
             self.steps += 1
+
             # Apply traffic light phase
             self.sumo.trafficlight.setPhase(self.ts_id, int(action))
 
@@ -168,8 +161,23 @@ class TrafficEnv(gym.Env):
         return obs, reward, done, truncated, info 
 
     # Compute observation
-
     def _get_observation(self):
+        """
+        Construct the observation vector:
+
+        For each incoming lane:
+            - last step vehicle count
+            - last step halting vehicle count (queue length)
+            - last step mean speed
+
+        For each outgoing lane:
+            - last step vehicle count
+
+        Additionally:
+            - one-hot vector of current traffic light phase
+            - current pressure scalar
+        """
+        
         obs = []
 
         #  Lane-level features
@@ -178,7 +186,7 @@ class TrafficEnv(gym.Env):
             queue = self.sumo.lane.getLastStepHaltingNumber(lane)
             speed = self.sumo.lane.getLastStepMeanSpeed(lane)
 
-            # -------- Sensor noise --------
+            # Sensor noise
             if hasattr(self, 'noise') and self.noise:
                 count = max(0, count + np.random.normal(0, self.noise_sigma))
                 queue = max(0, queue + np.random.normal(0, self.noise_sigma))
@@ -209,8 +217,17 @@ class TrafficEnv(gym.Env):
 
 
     # Reward function
-
     def _compute_reward(self, action):
+        """
+        Compute scalar reward given the current state and action.
+
+        The reward is a weighted combination of:
+            + queue_reduction  (encouraging shorter queues)
+            - queue_abs        (penalizing large queues)
+            - pressure         (penalizing unbalanced flows)
+            - switch_penalty   (discouraging frequent phase changes)
+            + throughput       (encouraging high flow)
+        """
         queue_reduction = self._compute_queue_reduction()
         queue_abs = self._compute_queue_length()
         pressure = self._compute_pressure()
@@ -223,12 +240,6 @@ class TrafficEnv(gym.Env):
             - self.c4 * switch_penalty
             + self.c5 * throughput
         )
-
-
-    # def _compute_pressure(self):
-    #     incoming = sum(self.sumo.lane.getLastStepVehicleNumber(l) for l in self.in_lanes)
-    #     outgoing = sum(self.sumo.lane.getLastStepVehicleNumber(l) for l in self.out_lanes)
-    #     return incoming - outgoing
 
     def _compute_pressure(self):
         """
@@ -249,13 +260,23 @@ class TrafficEnv(gym.Env):
         return pressure
 
     def _compute_switch_penalty(self, action):
+        """Return 1.0 if the phase changes; 0.0 otherwise."""
         return 1.0 if action != self.prev_phase else 0.0
 
     def _compute_throughput(self):
+        """
+        Throughput = number of vehicles that have just arrived in the network
+        since last step (difference of arrived vehicle count).
+        """
         current_passed = len(self.sumo.simulation.getArrivedIDList())
         return max(current_passed - self.prev_passed, 0)
     
     def _compute_queue_length(self):
+        """
+        Compute total queue length across all incoming lanes.
+
+        A vehicle is counted as queued if its speed < 0.1 m/s.
+        """
         total_q = 0
         for lane in self.in_lanes:
             vehs = self.sumo.lane.getLastStepVehicleIDs(lane)
@@ -265,12 +286,20 @@ class TrafficEnv(gym.Env):
         return total_q
     
     def _compute_queue_reduction(self):
+        """
+        Queue reduction = previous total queue length - current queue length.
+        Positive values indicate improvement.
+        """
         Q_t = self._compute_queue_length() 
         reduction = self.prev_queue - Q_t
         self.prev_queue = Q_t
         return reduction
     
     def _computer_avg_speed(self):
+        """
+        Compute the mean speed of all vehicles on incoming lanes.
+        Returns 0.0 if there are no vehicles.
+        """
         vehs_speeds=[]
         for lane in self.in_lanes:
             vehs = self.sumo.lane.getLastStepVehicleIDs(lane)
@@ -282,12 +311,18 @@ class TrafficEnv(gym.Env):
         return np.mean(vehs_speeds)
     
     def _compute_avg_waiting_time(self):
+        """
+        Compute average waiting time of all vehicles on incoming lanes.
+
+        Waiting time is obtained from SUMO's vehicle.getWaitingTime(v).
+        Returns 0.0 if there are no vehicles.
+        """
         wts=[]
         
         for lane in self.in_lanes:
             vehs = self.sumo.lane.getLastStepVehicleIDs(lane)
             for v in vehs:
-                wt = self.sumo.vehicle.getWaitingTime(v)  # 或 getAccumulatedWaitingTime(v)
+                wt = self.sumo.vehicle.getWaitingTime(v)  # or getAccumulatedWaitingTime(v)
                 wts.append(wt)
         if len(wts)==0:
             return 0.0

@@ -8,7 +8,6 @@ The system includes a custom Gym-compatible environment, experiment runner, and 
 ## Project Structure
 
 ```
-.
 
 ├── ppo.py                          # PPO agent (Actor-Critic, GAE, rollout)
 ├── train.py                        # Training loop for PPO 
@@ -222,6 +221,7 @@ MIT License.
 
 ## Authors
 
-- 
-- Team Members  
+- Yong Chen
+- Hengyu Liu
+- Zimo Zhang
 

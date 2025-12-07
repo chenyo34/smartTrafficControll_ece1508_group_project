@@ -40,15 +40,12 @@ def train_ppo(
     act_dim = env.action_space.n
     optimizer = optim.Adam(model.parameters(), lr=LR)
 
-    # print("Observation dim:", obs_dim)
-    # print("Action dim:", act_dim)
-
     global_step = 0
-    # episode_returns = []
-    # current_ep_return = 0.0
 
+    # Reset environment at start
     obs, info = env.reset()
 
+    # Arrays for logging aggregated metrics
     appended_rewards=[]
     appended_avg_speeds=[]
     appended_throughputs=[]
@@ -140,13 +137,6 @@ def train_ppo(
                 nn.utils.clip_grad_norm_(model.parameters(), MAX_GRAD_NORM)
                 optimizer.step()
 
-                # Print loss information for debugging
-                # print(f"Epoch {epoch + 1}/{N_EPOCHS}, Step {step + 1}/{len(range(0, dataset_size, MINI_BATCH_SIZE))}:")
-                # print(f"  Actor Loss: {actor_loss.item():.4f}")
-                # print(f"  Critic Loss: {critic_loss.item():.4f}")
-                # print(f"  Entropy Loss: {entropy_loss.item():.4f}")
-                # print(f"  Total Loss: {loss.item():.4f}")
-
         # 4) Compute the result for the current batch for metric measurement 
         batch_rewards_return = rewards_arr.mean()
         batch_speeds_return = avg_speeds.mean()
@@ -154,8 +144,6 @@ def train_ppo(
         batch_waiting_times_return = waiting_times.mean()
         batch_queue_length_return = queue_length.mean()
         batch_pressure_return = pressures.mean()
-
-
 
         # Debug printout: key metrics during training
         progress = (global_step / TOTAL_TIMESTEPS) * 100
@@ -177,11 +165,6 @@ def train_ppo(
         appended_waiting_times.append(batch_waiting_times_return)
         appended_pressures.append(batch_pressure_return)
 
-        # appended_rewards.append(batch_rewards_return)
-        # appended_avg_speeds.append(batch_speeds_return)
-        # appended_throughputs.append(batch_throughputs_return)
-        # appended_waiting_times.append(batch_waiting_times_return)
-
     if close_env:
         print("Closing environment...")
         env.close()
@@ -200,5 +183,3 @@ def train_ppo(
         appended_throughputs,
         appended_waiting_times
     )
-
-    # return appended_rewards, appended_avg_speeds, appended_throughputs, appended_waiting_times
