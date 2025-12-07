@@ -222,6 +222,6 @@ MIT License.
 
 ## Authors
 
-- 
+- Zimo Zhang, Hengyu Liu, Yong Chen
 - Team Members  
 
